@@ -1,0 +1,12 @@
+{
+  "name": "微博观点库",
+  "short_name": "观点库",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f6f6f7",
+  "theme_color": "#ff8200",
+  "icons": [
+    { "src": "icon-180.png", "sizes": "180x180", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

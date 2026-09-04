@@ -1,0 +1,1043 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="referrer" content="no-referrer">
+<meta name="theme-color" content="#ff8200">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="观点库">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-180.png">
+<link rel="manifest" href="manifest.json">
+<title>微博观点库 · 极简整理工具</title>
+<style>
+  :root{
+    --accent:#ff8200; --bg:#f6f6f7; --card:#fff; --line:#e6e6e9;
+    --txt:#222; --sub:#888; --danger:#d94838; --radius:12px;
+    --sideW:232px;
+  }
+  *{box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent;}
+  html{-webkit-text-size-adjust:100%;}
+  body{font:15px/1.7 -apple-system,"PingFang SC","Microsoft YaHei",sans-serif; background:var(--bg); color:var(--txt);}
+  button{cursor:pointer; border:1px solid var(--line); background:#fff; border-radius:8px; padding:6px 13px; font-size:14px; color:var(--txt); transition:.15s;}
+  button:hover{border-color:var(--accent); color:var(--accent);}
+  button.primary{background:var(--accent); border-color:var(--accent); color:#fff;}
+  button.primary:hover{opacity:.9; color:#fff;}
+  button.danger:hover{border-color:var(--danger); color:var(--danger);}
+  button.icon{padding:3px 9px; font-size:13px;}
+  input,select,textarea{font:inherit; border:1px solid var(--line); border-radius:8px; padding:7px 10px; background:#fff; color:var(--txt);}
+  input:focus,select:focus,textarea:focus{outline:none; border-color:var(--accent);}
+  a{color:var(--accent); text-decoration:none;}
+  a:hover{text-decoration:underline;}
+
+  /* ===== 顶栏 ===== */
+  header{background:var(--card); border-bottom:1px solid var(--line); padding:10px 16px; position:sticky; top:0; z-index:30;}
+  .hrow{display:flex; gap:9px; align-items:center; max-width:1180px; margin:0 auto;}
+  .menuBtn{display:none; font-size:17px; padding:5px 11px; flex:none;}
+  .logo{font-weight:700; font-size:17px; white-space:nowrap;}
+  .logo em{font-style:normal; color:var(--accent);}
+  #linkInput{flex:1; min-width:120px;}
+  #prog{color:var(--sub); font-size:12px; flex:1; text-align:right; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  #stopBtn{display:none;}
+  #pasteToggle{flex:none;}
+
+  /* ===== 工具条：手机横向滑动 ===== */
+  .toolbar{max-width:1180px; margin:12px auto 0; padding:0 16px; display:flex; gap:9px; align-items:center; flex-wrap:wrap;}
+  .toolbar label{font-size:13px; color:var(--sub); display:flex; gap:5px; align-items:center; cursor:pointer; white-space:nowrap;}
+  .toolbar .scope{color:var(--sub); font-size:12px; margin-left:auto; white-space:nowrap;}
+  #pasteBox{display:none; max-width:1180px; margin:10px auto 0; padding:0 16px;}
+  #pasteBox.open{display:block;}
+  #pasteArea{width:100%; height:130px; resize:vertical; font-size:14px;}
+  .hint{color:var(--sub); font-size:12px; margin-top:4px;}
+
+  /* ===== 布局 ===== */
+  .wrap{max-width:1180px; margin:14px auto 60px; padding:0 16px; display:flex; gap:16px; align-items:flex-start;}
+  aside{width:var(--sideW); flex:none; background:var(--card); border:1px solid var(--line); border-radius:var(--radius); padding:10px; position:sticky; top:66px; max-height:calc(100vh - 84px); overflow-y:auto;}
+  .asideHead{display:flex; align-items:center; justify-content:space-between; padding:2px 4px 8px; border-bottom:1px solid var(--line); margin-bottom:8px;}
+  .asideHead span{font-size:13px; color:var(--sub);}
+  .asideHead .x{border:none; background:none; font-size:17px; color:#bbb; padding:0 4px; display:none;}
+  .cat{display:flex; align-items:center; gap:6px; padding:8px 9px; border-radius:8px; cursor:pointer; user-select:none; margin-bottom:2px; border:1px solid transparent;}
+  .cat:hover{background:#faf7f2;}
+  .cat.sel{background:#fff3e6; border-color:#ffd9ad;}
+  .cat .grip{color:#c9c9cf; cursor:grab; font-size:13px;}
+  .cat .nm{flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:14px;}
+  .cat .ct{font-size:11px; color:var(--sub); background:#f1f1f3; border-radius:9px; padding:0 7px; flex:none;}
+  .cat .del{visibility:hidden; border:none; background:none; color:#bbb; padding:0 2px; font-size:15px;}
+  .cat:hover .del{visibility:visible;}
+  .cat .del:hover{color:var(--danger);}
+  .cat.dragging{opacity:.4;}
+  .cat.over{border-top:2px solid var(--accent);}
+  .cat.allrow{font-weight:600;}
+  .addRow{display:flex; gap:6px; margin-top:8px;}
+  .addRow input{flex:1; min-width:0;}
+  .sideTab{display:none; position:fixed; left:0; top:45%; z-index:25; border-radius:0 9px 9px 0; border-left:none; padding:10px 7px; writing-mode:vertical-rl; letter-spacing:2px; box-shadow:2px 0 8px rgba(0,0,0,.06);}
+
+  main{flex:1; min-width:0;}
+  .group{margin-bottom:26px;}
+  .group>h2{font-size:16px; margin-bottom:10px; padding-left:2px;}
+  .group>h2 span{color:var(--sub); font-size:12.5px; font-weight:400;}
+  /* ===== 只读卡片 ===== */
+  .card{background:var(--card); border:1px solid var(--line); border-radius:var(--radius); padding:14px 16px; margin-bottom:12px; box-shadow:0 1px 2px rgba(0,0,0,.03);}
+  .card .t{font-weight:600; font-size:15.5px; line-height:1.5;}
+  .card .badge{display:inline-block; font-size:11px; color:var(--accent); background:#fff3e6; border-radius:9px; padding:1px 9px; margin-bottom:6px;}
+  .card .tx{white-space:pre-wrap; font-size:15px; line-height:1.75; margin-top:6px; word-break:break-word;}
+  .imgs{display:flex; gap:8px; flex-wrap:wrap; margin-top:10px;}
+  .imgs .im{position:relative; width:82px; height:82px; border-radius:8px; overflow:hidden; border:1px solid var(--line); background:#f2f2f4;}
+  .imgs img{width:100%; height:100%; object-fit:cover; display:block;}
+  .imgs .add{width:82px; height:82px; border:1px dashed var(--line); border-radius:8px; background:none; color:var(--sub); font-size:20px;}
+  .imgs .add:hover{border-color:var(--accent); color:var(--accent);}
+  .foot{margin-top:10px; font-size:12.5px; color:var(--sub); display:flex; gap:9px; align-items:center; flex-wrap:wrap;}
+  .foot .meta{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .empty{color:var(--sub); text-align:center; padding:60px 0; background:var(--card); border:1px dashed var(--line); border-radius:var(--radius);}
+
+  /* ===== 编辑弹层 ===== */
+  .mask{display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:60;}
+  .mask.open{display:block;}
+  .sheet{position:fixed; left:0; right:0; bottom:0; max-height:92vh; overflow-y:auto; background:#fff; border-radius:16px 16px 0 0; padding:16px; z-index:61; transform:translateY(100%); transition:transform .22s;}
+  .mask.open .sheet{transform:none;}
+  .shTitle{display:flex; justify-content:space-between; align-items:center; font-weight:700; font-size:16px; margin-bottom:12px;}
+  .shTitle .x{border:none; background:none; font-size:20px; color:#999; padding:0 4px;}
+  .fld{display:block; margin-bottom:12px;}
+  .fld .flbl{font-size:12.5px; color:var(--sub); margin-bottom:4px;}
+  .fld input,.fld select{width:100%;}
+  .fld textarea{width:100%; min-height:220px; resize:vertical; font-size:15px; line-height:1.75;}
+  .edBtns{display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top:6px; position:sticky; bottom:-16px; background:#fff; padding:10px 0 2px; border-top:1px solid var(--line);}
+  .edBtns .sp{flex:1;}
+
+  /* ===== 打印 ===== */
+  #printArea{display:none;}
+  @media print{
+    body{background:#fff;}
+    header,.toolbar,.wrap,#pasteBox,.backdrop,.mask{display:none !important;}
+    #printArea{display:block; padding:0;}
+    #printArea h1{font-size:20px; margin-bottom:4px;}
+    #printArea .meta{color:#666; font-size:11px; margin-bottom:18px;}
+    #printArea h2{font-size:15px; margin:16px 0 8px; border-bottom:1px solid #ddd; padding-bottom:3px;}
+    #printArea .it{margin-bottom:14px; page-break-inside:avoid;}
+    #printArea .tt{font-weight:700; font-size:13px;}
+    #printArea .tx{white-space:pre-wrap; font-size:12px; margin-top:2px;}
+    #printArea .src{color:#777; font-size:10.5px; margin-top:2px; word-break:break-all;}
+  }
+
+  .backdrop{display:none; position:fixed; inset:0; background:rgba(0,0,0,.4); z-index:39;}
+
+  /* ===== 手机适配 ===== */
+  @media (max-width:860px){
+    .menuBtn{display:inline-flex;}
+    .hrow{flex-wrap:nowrap;}
+    #linkInput{display:none;}
+    #pasteToggle{margin-left:auto;}
+    .toolbar{flex-wrap:nowrap; overflow-x:auto; -webkit-overflow-scrolling:touch; padding-bottom:4px; scrollbar-width:none;}
+    .toolbar::-webkit-scrollbar{display:none;}
+    .toolbar .scope{margin-left:0;}
+    /* 侧栏 → 抽屉 */
+    .backdrop.show{display:block;}
+    aside{position:fixed; left:0; top:0; bottom:0; width:min(80vw,300px); max-height:none; z-index:40; border-radius:0 14px 14px 0; transform:translateX(-106%); transition:transform .22s; overflow-y:auto;}
+    body.drawer-open aside{transform:none;}
+    .asideHead .x{display:block;}
+    .sideTab{display:none !important;}
+    .wrap{margin-top:10px; padding:0 12px;}
+    .card{padding:14px 14px;}
+    .card .tx{font-size:15.5px;}
+    .imgs .im{width:calc((100vw - 24px - 28px - 16px)/3); height:calc((100vw - 24px - 28px - 16px)/3); max-width:120px; max-height:120px;}
+  }
+  @media (min-width:861px){
+    body.side-off aside{display:none;}
+    body.side-off .sideTab{display:block;}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="hrow">
+    <button class="menuBtn" id="menuBtn" title="分类">☰</button>
+    <div class="logo">微博<em>观点库</em></div>
+    <input id="linkInput" placeholder="粘贴微博主页链接（如 https://weibo.com/u/1234567890 或纯数字UID）">
+    <button class="primary" id="fetchBtn">抓取</button>
+    <button id="stopBtn">停止</button>
+    <span id="prog"></span>
+    <button id="pasteToggle">粘贴导入</button>
+  </div>
+  <div id="pasteBox">
+    <textarea id="pasteArea" placeholder="方案B：把微博主页内容直接粘贴到这里&#10;① 网页版主页全选复制页面文字，或&#10;② 打开 m.weibo.cn 接口地址（抓取失败时界面会给出），全选复制 JSON"></textarea>
+    <button class="primary" id="parseBtn" style="margin-top:6px;">解析粘贴内容</button>
+    <div class="hint">解析规则：自动剔除时间行、赞/转/评计数行、@他人的评论行；只保留博主本人文字。转发的微博只保留博主自己写的部分。</div>
+  </div>
+</header>
+
+<div class="toolbar">
+  <label><input type="checkbox" id="incSrc"> 导出附带来源</label>
+  <span class="scope" id="scopeTip"></span>
+  <button id="impJson">📂 导入JSON</button>
+  <button id="expJson">💾 导出JSON</button>
+  <button id="expDocx">导出 Word</button>
+  <button id="expPdf">导出 PDF</button>
+  <button id="expTxt">导出文本</button>
+  <button id="copyTxt">复制文本</button>
+  <input id="jsonFile" type="file" accept="application/json,.json" style="display:none">
+</div>
+
+<div class="wrap">
+  <aside id="sidebar">
+    <div class="asideHead"><span>分类（长按名称可重命名）</span><button class="x" id="asideClose">×</button></div>
+    <div id="catList"></div>
+    <div class="addRow">
+      <input id="newCat" placeholder="新分类名">
+      <button id="addCat">添加</button>
+    </div>
+  </aside>
+  <main id="entryArea"></main>
+</div>
+<button class="sideTab" id="sideTab">☰ 分类</button>
+
+<div class="backdrop" id="backdrop"></div>
+
+<div class="mask" id="mask">
+  <div class="sheet">
+    <div class="shTitle"><span>编辑条目</span><button class="x" id="edClose">×</button></div>
+    <label class="fld"><div class="flbl">小标题</div><input id="edTitle" placeholder="小标题"></label>
+    <label class="fld"><div class="flbl">所属分类</div><select id="edCat"></select></label>
+    <label class="fld"><div class="flbl">正文（保持原文）</div><textarea id="edText" placeholder="原文…"></textarea></label>
+    <div class="fld"><div class="flbl">配图</div><div class="imgs" id="edImgs"></div></div>
+    <div class="edBtns">
+      <button id="edUp" title="在同分类内上移">↑</button>
+      <button id="edDown" title="在同分类内下移">↓</button>
+      <span class="sp"></span>
+      <button class="danger" id="edDel">删除</button>
+      <button id="edCancel">取消</button>
+      <button class="primary" id="edSave">保存</button>
+    </div>
+  </div>
+</div>
+
+<div id="printArea"></div>
+
+<script>
+'use strict';
+/* ================= 数据模型 ================= */
+const KEY='weibo_opinion_v1';
+let cats=[], entries=[], incSrc=false, curCat='all';
+let fetching=false, abortCtl=null;
+
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
+function defaultState(){
+  return {
+    cats:[
+      // 直播相关（优先级高于好物，例如"穿搭"在直播语境下归为造型）
+      {id:'l_bg',       name:'直播相关 · 背景/布置'},
+      {id:'l_style',    name:'直播相关 · 造型/妆容'},
+      {id:'l_chat',     name:'直播相关 · 聊天内容/话题'},
+      {id:'l_private',  name:'直播相关 · 私聊/维护'},
+      {id:'l_skill',    name:'直播相关 · 赚钱/心法/套路'},
+      // 好物分享
+      {id:'h_clothing', name:'好物分享 · 服装穿搭'},
+      {id:'h_shoes_bags',name:'好物分享 · 鞋包配饰'},
+      {id:'h_beauty',   name:'好物分享 · 美妆护肤'},
+      {id:'h_daily',    name:'好物分享 · 日用好物'},
+      {id:'h_food',     name:'好物分享 · 零食餐饮'},
+      // 思维方式
+      {id:'m_money',    name:'思维方式 · 金钱观/消费观'},
+      {id:'m_gender',   name:'思维方式 · 男女/情感关系'},
+      {id:'m_life',     name:'思维方式 · 生活/人生态度'},
+      {id:'m_work',     name:'思维方式 · 工作/搞钱思维'},
+      // 其他
+      {id:'o_daily',    name:'其他 · 日常碎碎念'}
+    ],
+    entries:[], inc:false
+  };
+}
+function load(){
+  try{
+    const s=JSON.parse(localStorage.getItem(KEY));
+    if(!s||!Array.isArray(s.cats)) return false;
+    cats=s.cats; entries=s.entries||[]; incSrc=!!s.inc;
+    document.getElementById('incSrc').checked=incSrc;
+    return true;
+  }catch(e){return false;}
+}
+function save(){
+  try{localStorage.setItem(KEY,JSON.stringify({cats,entries,inc:incSrc}));}
+  catch(e){setProg('⚠ 保存失败：浏览器存储空间不足');}
+}
+
+/* ================= 工具函数 ================= */
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
+function setProg(t){document.getElementById('prog').textContent=t||'';}
+function htmlToText(html){
+  let s=String(html||'');
+  s=s.replace(/<br\s*\/?>/gi,'\n').replace(/<\/p>/gi,'\n').replace(/<img[^>]*>/gi,'');
+  s=s.replace(/<[^>]+>/g,'');
+  const d=document.createElement('textarea'); d.innerHTML=s; s=d.value;
+  return s.replace(/[ \t]+\n/g,'\n').replace(/\n{3,}/g,'\n\n').trim();
+}
+
+function genTitle(text){
+  let t=(text||'').replace(/https?:\/\/\S+/g,'').trim();
+  const m=t.match(/#([^#\n]{1,24})#/);
+  if(m&&m[1].trim()) return m[1].trim();
+  let line=(t.split('\n').find(l=>l.trim())||'').trim().replace(/^(转发微博[:：]?|Re:?)/i,'').trim();
+  if(!line) return '未命名';
+  let head=line.slice(0,26);
+  const cut=head.search(/[，,、；;：:。!！?？]/);
+  if(cut>=6) head=head.slice(0,cut);
+  else head=head.slice(0,24);
+  return head.trim()||'未命名';
+}
+/* ================= 分类规则（与 Python classifier_rules.json 一致） ================= */
+const PRIORITY_ORDER=['l_bg','l_style','l_chat','l_private','l_skill','h_clothing','h_shoes_bags','h_beauty','h_daily','h_food','m_money','m_gender','m_life','m_work','o_daily'];
+// 主分类归属：用于判断当同分时谁优先（直播 > 好物 > 思维 > 其他）
+const MAIN_PRIORITY = { l:0, h:1, m:2, o:3 };
+// 否定词：<否定词 + 关键词> 相邻时，不计入命中
+const NEGATIONS=['没化妆','没买','没穿','没做','不想','不喜欢','不是','不要','别买','别穿','不爱','不确定','不确保','不适用','不说话','不算','不记得','没收到','不想洗头','不怕水','不花钱','白嫖不好骗','不买','别是'];
+
+function mainOf(subId){ return subId.split('_')[0]; }  // 'l_style' -> 'l'
+
+const SUB_KW={
+  // ===== 直播相关 =====
+  l_bg:['灯光','背景','布置','镜头','怼脸','高清','角度','打光','补光','房间','桌面','摄像头','焦距','灯','灯源','支架','显示器','行李箱','丝袜罩子','痣','盖章','内衣带','菜','场关'],
+  l_style:['穿搭','发型','妆容','化妆','造型','好看','穿什么','衣服','显大','头包脸','颅顶','高颅顶','发型教程','发箍效果','颜值','擦大边','男性审美','性感','镂空','纯欲','清纯','土纯','萌','美女感','合身','白雪公主','头小','显胖','显瘦','娇嫩','少女','上镜'],
+  l_chat:['话题','聊天','互动','观众','说','念','分享','唠','透明化','思维透明','外卖','游戏','刷','朋友圈','pyq','xhs','小红书','摸鱼','短视频','留白','多说点','共情','即兴演讲','低头玩手机','思维透明化','透明出来','话题透明化'],
+  l_private:['私聊','私发','私下','vx','微信','zfb','支付宝','维护','网易云','pyq','朋友圈','售后','现实','见面','加好友','互关','清关注','拉黑','备注','送礼物维护','私聊篇','聊天技巧','雌竞','进货','筛选','冷处理','不回复','打官司','自愿赠予','起诉','报警','传播','举报','封号','拉黑','转账','代付','联系','大哥大姐','v提示风险','叽付宝','vx风险','联系方式','骚扰','群发'],
+  l_skill:['圈米','赚钱','票多','打赏','大哥','刷礼物','要礼物','消费观','消费实力','等级','套路','sop','扮猪','雌竞','维护','筛选','售后','圈钱','搞钱','月入','年入','七位数','六位数','w','百万','十万','消费潜力','识别','花钱','大方','消费金额','小费','配套消费','真大哥','直播经验','主播进化','ego','急于求成','白班','淡定点','穷疯了','负能量','打工','课件','圈女生','钓鱼','播法','自洽','努力','改','进步','状态好','活人感','技巧','雄竞','厚脸皮','心态','盘男人','搞粉','买账号','百八十万粉','百万粉','可操作性','破坏市场','蓝海','神器','扮猪装唐','可得性','平易近人','门槛','下菜碟','看人下菜','情绪价值','联系方式','刷了花了','重新要一笔','骚扰','拉黑删除','分组','权限','pyq分组','变几千','门槛可以贵','变现','薅到赚到','毕业小哥','出师表','砸钱','攻略大哥','现实同学','v发消息','转叽付宝','风险提示','视频录屏','专一','烂关系','已婚','小三小四','溢价','反差','废墟人设','攻略你','心理底线','败坏','钓鱼执法','下头','装正常思路','正常人','开头调子','装普通人','正当班','社保挂岗','恋爱打视频','追求男方外型','诚意','忙','态度温和','推进关系','不打视频','专一','攻略','劝良家下海','劝bz从良'],
+  // ===== 好物分享 =====
+  h_clothing:['裙','大衣','开衫','外套','上衣','短袖','毛衣','冬装','内搭','瑜伽裤','裤子','丝袜','睡衣','泳衣','内衣','胸贴','羽绒服','夹克','卫衣','针织衫','牛仔','套装','镂空','土货','穿搭','外搭','连帽貂','长款貂','毛外套','开衫','长裙子','百褶裙','芭蕾舞服','针织','打勾那两个','发箍效果','假马尾','蓬松','头包脸','衣服','吊带我','镂空能透出皮肤','奶蓝色','冬季内搭','打底衫','毛绒外套','蒙口','maxmara','alo','jill大姐姐','南油','晓雪','woppei','labbro','qiqifur','西西里','贝壳'],
+  h_shoes_bags:['鞋','高跟','拖','靴','包','双肩包','背包','挎包','芭蕾包','项链','手链','手镯','美瞳','美甲','发饰','发箍','发圈','假发片','假头发','发夹','口罩','香水','猫眼','碎钻','配饰','lulu','蒙口','minikelly','birkin','康康','2424','贝壳爱马仕','lindy','托特','芭蕾舞包','毛绒双肩包','lulu毛绒双肩包','香奈儿','爱马仕','非奢','奢品','奢侈品','包包分享'],
+  h_beauty:['护肤','化妆','粉底','口红','粉饼','高光','面膜','补水','卸妆','精华','水乳','美白','防晒','护发','身体乳','腮红','定妆','ct白月光','毛戈平','ysl补水棒','奶香','皂香','唇釉','kiko','香奈儿174','香奈儿双头','伪素颜','春人','小樱花','美宝莲','粉底液','香奈儿154','kiko103','香奈儿192','香奈儿54','双头唇釉','打底','粉底液盖','变浅唇','上镜很合适','假睫毛','羚羊公主','缪斯公主','贴','远拍特妩媚','清淡一丁点','贴完','假头发教程','原生的头发','自然醒发','直夹板','发际线','修剪刘海','假头发连根拔起'],
+  h_daily:['搬家','租房','烘干机','洗衣机','收纳','料理','家电','家具','烘手机','口罩','洗发','留香','假发','假发打理','打理衣服','厨房','香薰','帽子','渔夫帽','发箍打理','假发片教程','假发怎么梳','假发发缝','假发自然','外置硬盘','硬盘送人','papi酱送人的','毛毯','白色沙发','配p3这个','女孩子香香的','少女一看就是香香的','p2这家店买的','懒人沙发','图三沙发','送人礼物','礼物推荐'],
+  h_food:['夜宵','好吃','蛋糕','奶茶','咖啡','餐厅','外卖','甜点','做饭','面包','零食','榴莲','奶','草莓','餐饮','火锅','烤肉','螺狮粉','寿司','水果','很久以前','面包配小冰棍','冰棍','好吃的','香香夜宵','吃夜宵','吃烧烤','连吃三天','牛奶','奶香味','香宝宝奶香','宝宝皂香','奶蓝色','chanel54的草莓红','玫红草莓红','kiko159粉嫩'],
+  // ===== 思维方式 =====
+  m_money:['钱','消费','存款','花','省','存钱','赚','买真包','性价比','有钱','大方','穷','投资','收入','支出','预算','省钱心得','便宜喽嗖','花钱随性','手超松','消费潜力','消费体系','金额','真大哥','有钱程度','百万','刷','礼物金额','奢侈品','真包','假包','假货','歪货','广州档铺','测评找款','闲鱼收','手上的钱有限','花出性价比','盘男人钱','真大件房子车','匹配的生活','立人设','有男人送就收','月入几万','几十万','大环境','百八十','百八十万粉','百万粉','账号','百八十万','六七位数','转账不收过','大钱','小钱','大钱赚了','收入匹配','穷着','心理素质差的','自尊心读书人','读书人自尊','知识分子','穷鬼','赚钱操作','差那一点点','孔乙己长衫','孔乙己短袖','孔乙己棉毛衫','尊严不值铜钱','尊严很贵','市场价格','金锄头','皇帝金犁耙','搞暧昧','耍信息','发短信骚扰','发消息骚扰','发消息','打字','叫老公','给男人发消息','不好意发消息','不好意思','骗人','钓鱼','脱长衫','脱下长衫','脱棉毛衫','做不到','别问','烂关系','要见面','看诚意','真心诚意','推关系','推进不了一点','攻略你','砸下来','大方一点','大票','大笔转账','六位数转账','七位数转账','小钱大钱','真实发生','现实世界发生','极小比例运气','不讨论运气','谁信谁傻逼','真实世界','没有经历过的','想的全是错的','真相毫无关系','穷人社畜幻想','皇帝金锄头','从单一男人身上获得大钱','大钱的人要经历什么','错的答案','错误答案记全了','小说电视剧看多了','小红书刷多了','做空言论看多了','脑子蠢','蠢的不可方物','现实生活','脱掉长衫','下海','走歪路','放尊严','不体面的工作','尊严很便宜','值铜钱','cj','发信息','学话术','复制粘贴','发照片','现实生活','给人夹夹菜','说两句好话','有大钱','极小比例运气','不说（朋友）','真实世界中发生的','没经历过的人','想象不到的','穷人只会幻想皇帝富有','金锄头金犁耙','富人生活幻想','现实差太远','看完全错','脱光了看底裤','错的离谱','觉得糕蛋提倡','完全错','难听点说','女生都长了13','不稀奇','市场价','根本不特殊','底线特殊性','都长了一样的东西','不赚钱','普通女孩','自洽一点','人就是得学得成长','现状确实很穷','穷的很稳定','很穷','学成长','都在看了','不自洽','平凡去上白班','千锤百炼变强','可以永远不吃这碗饭','不必看我写的'],
+  m_gender:['男','女','老公','配偶','男人','女人','大哥','男女视角','雄竞','雌竞','爱情','婚姻','男朋友','对象','相亲','谈恋爱','夫妻','婆媳','家庭','大姐','男的','女的','男主播','女主播','好东西','八分坏二分坏','画饼打打字','营造氛围','上下嘴唇一闭','来财','爱情票','暧昧票','情怀哥哥','情怀','大票','凿','凿过','人家不告诉你','做空','相信做空','大小哥毕业','毕业别人','薅到赚到','出师','骚扰别人是美德','美德','经常被毕业','小哥毕业','真没见过','女主播是好东西','最多是八分坏二分坏','坍塌一点','莫须有的原则','原则','吃什么','来了就享受','男的说话','让你叫老公就叫呗','发照片找别人的发','谁认得出来','才艺唱歌跳舞','大票绝大多数都是爱情来的','爱信不信','情怀大哥','不凿凿不上的','情怀哥哥情怀','退而求其次保面子','被做空了','信的人被做空了','骚扰','骚扰是美德','毕业别人','哥的现实同学','以前哥','老婆发现了','两年了','被老婆发现','删了两次','重生之以前哥的现实同学','离奇','离奇一点','现实同学爱上我','以前大哥','爱上我','v提示风险了','转叽付宝','薅完一顿','一顿薅完','给他v','问我怎么加','超出的价格','玩小圈','小圈哥','现实玩商k','陪聊陪酒','商k','2-4k','1k的特效','小费','外面玩','消费金额在他的金钱体系里','感恩戴德','如获恩典','敏锐','莫名其妙','很好满足','有点莫名其妙','金额在网上算多了','人家觉得不算多','别感恩戴德','可以接着要','就接着要','接着要这个金额','消费金额不算多','专门看直播的不是正常人','没这么闲','看直播没经验','直播里的金额对于主播算多还是少','不清楚','不专门看直播','正常玩商k','商k什么的','陪聊天喝9','陪聊天喝酒','2-4k','一千的特效','1k的特效','他觉得不贵的礼物','金额人家觉得不多','觉得不多','小费而已','小费','赚老板钱','正经白班','招好员工邪修','工作方法','找工作方法','工作心态','方法系列写多点','要有人看','赚老板钱（正经白班）','赚钱篇（开源之赚男人钱 赚老板钱）','进货 筛选 维护 售后','雌竞','有男女视角思维和厚脸皮好心态','进货（思路➕方法）','筛选','维护（ 发朋友圈 私聊 现实）','私聊篇 聊天技巧','现实篇','售后（0售后战绩）','招好员工邪修','存钱篇（ 节流之省钱 心态 ）','省钱心得','存钱心态'],
+  m_life:['心态','厚脸皮','人生','建议','成长','淡定点','焦虑','松弛','努力','人生经历','生活','随缘','开心','快乐','幸福','得意','尴尬','自卑','自信','自恋','全能自恋','拖延症','怕水','洗头','不好意思','炫耀','聪明','天才','智商鉴定器','功德','npc','绷不住','一天啥也不干','啥也不干就是蛋的一天','贱嗖的了','脚趾头','劲敌了呢','洗完丢到烘干机','光着来卫生间','不小心丢水','真是不小心','那你得洗澡了哦','擦干了','妹洗！','下次决定不小心丢点沐浴露过去','洗浴玩耍','奶蓝色','做了脚指甲','采耳还有美容','晚上吃了香香夜宵和甜点','心情愉悦','毁坏性破坏一下市场','好用的不想用','蛋思考一下','洗完头半夜要不要发出来','我老公说让我别什么都往外捅咕','蛋年纪尚小','仍喜欢炫耀聪明','但凡播过 对直播对互联网有一点认知','发现想到这个的蛋有多聪明','脑子中闪过这个东西的时候','差给自己脑门上贴天才两个字','可以当智商鉴定器的程度','看完那条没意识到蛋的别样睿智','只觉得稀松平常','智商低于60','老天奶 这种方案我发公开可见可以攒功德吗？','没概念也识别不了真假','满脑子都是幻想','容易幻想夸大','很容易被骗','相信他人不实言论','四五十级就是大哥了','说句老实话','四五十多点这种等级','大多数 95%都是自己平时吃泡面的那种','很短时间内升的不算','吃泡面的意思','自己平时的别的开销都不多','只是在无聊找消遣上很愿意花钱','没有别的配套消费','不可能是女的心中那种真大哥','没有个六十级都是现实生活中很普通的人','不要幻想在他们身上有什么大结果','人家自己就不是有钱人','男人说什么就信什么了','很早之前发过 别人说的所有话都当海龟汤','真的很幽默','误判他人消费实力造成流失','对他人消费潜力没有预估','觉得一个穷鬼是有钱人','别人说自己年入多少多少就信了','自己没有的话看什么都分辨不出真假','消费观极其朴素','十块我最多花1-3块','刷十万的我以为起码一百一十万 就刷了个零头','但凡有二十就刷二十了','敢花的人就有钱吗','愚蠢','消费观大方','赚的真的很少','根本不具备可持续发展的可能','开源都没有','看出来的那瞬间','决定要走长期方案还是一把薅死了','大多数人根本不是什么大哥','就适合大点干早点散'],
+  m_work:['工作','老板','赚','打工','创业','直播赚钱','方法','效率','认真','机构老板','讲师','搞钱','副业','主副业','正儿八经','正经白班','找工作','工作方法','工作心态','招员工','上白班','月入','年入','工资','辞职','跳槽','职场','孔乙己的长衫','长衫','短袖','棉毛衫','吊带','读书人自尊','普通女孩','上白班','白班一两月','人生最好要上过白班','上白班哪怕一两个月','没必要那么急','着急负能量','有一种穷疯了的感觉','淡定点','穷疯了','焦虑','急非常着急','三天不见效立刻再换方案','急于求成非常着急','操作错误','错失很多钱','真的识别不了'],
+  // ===== 兜底 =====
+  o_daily:['今天','昨天','一天','晚上','下午','早上','老公','脚趾头','洗澡','衣服洗完','烘干机','夜宵店','熟悉的位置','店员','npc','做了脚指甲','采耳','美容','洗完头','半夜','思考','坐等','拖延症','不想洗头','出发去吃夜宵','电梯到一楼','豆柴','小小黑色豆柴','四处逃窜','根本没地方躲','我老公走我前面','冲向后面的我','一把把它捡起来了','瞬间变得非常嚣张','在后面大摇大摆','该赶紧跑出门','狗狗落地了','看戏','问我在干嘛为什么不赶紧出去','他没告诉我要跑呀','萌萌哒','豆柴很可爱','手机外屏碎了','心碎了一起碎了','苹果从来不贴膜','大理石台阶','碎了一点','右边一个点像蜘蛛网','心情直转急下','噜噜脸了','一个新哥给转了换屏幕钱','可以不换了','每天靠这个敛财','直接整个置换成18','不喜欢换手机','单换个屏幕又不如直接换手机','一鼓作气传输数据','四五年不换手机','导一下真的很麻烦','外置硬盘送到心坎上','手机1tb都不够用','要看邮件啥的占用很多','送人礼物很满意送到心坎上','毯子买过好几次了','白色沙发配','娇嫩少女一看就是香香的女孩子住的','真魅魔声音','听男的夹的','只有声音没画面','声音的主人很漂亮','魅魔那种听完就觉得','我靠好烧','硬了','开的变声器','科技处理的','男的自己夹的','挺牛的','刷到的时候花了点钱加了','进了私人群','翻他发的录屏回忆一下','学的还是不像','回忆一下那种感觉','声音真的是很重要的一环','没必要说那么多话','声音和感觉要对','圈钱的必要课程了']
+};
+
+function mainGroupOf(subId){
+  return {l:0,h:1,m:2,o:3}[mainOf(subId)] ?? 9;
+}
+
+function countKW(text, kwList){
+  // 返回：{count, hits: [], negatedHits: []}
+  const t = String(text||'').toLowerCase();
+  const hits=[], negated=[];
+  // 找出否定词窗口
+  const negSpans=[];
+  for(const neg of NEGATIONS){
+    const nl = neg.toLowerCase();
+    let idx=0;
+    while(true){
+      const p = t.indexOf(nl, idx);
+      if(p<0) break;
+      negSpans.push([Math.max(0,p-2), p+nl.length+8]);  // 否定词前后窗口
+      idx = p+nl.length;
+    }
+  }
+  for(const kw of (kwList||[])){
+    if(!kw) continue;
+    const kl = kw.toLowerCase();
+    let idx=0;
+    while(true){
+      const p = t.indexOf(kl, idx);
+      if(p<0) break;
+      let bad=false;
+      for(const [s,e] of negSpans){ if(s<=p && p<=e){bad=true;break;} }
+      if(bad){ negated.push(kw); }
+      else   { hits.push(kw); }
+      idx = p+kl.length;
+    }
+  }
+  // 去重保序
+  const u = a => Array.from(new Set(a));
+  return { count:u(hits).length, hits:u(hits), negated:u(negated) };
+}
+
+/**
+ * 猜测分类（前端内用）：
+ * 给每个子分类打分 = 子类命中数 + 同一主分类的关键词命中*0.5
+ * 再用 mainGroupOf 做优先级决断
+ */
+function guessCat(text){
+  const results = [];
+  const allSubIds = PRIORITY_ORDER;
+  for(const sid of allSubIds){
+    const kw = SUB_KW[sid] || [];
+    const sub = countKW(text, kw);
+    results.push({ sid, score: sub.count, hits: sub.hits });
+  }
+  // 排序：分数降序，同分按 PRIORITY_ORDER 顺序
+  results.sort((a,b)=>{
+    if(b.score!==a.score) return b.score-a.score;
+    return PRIORITY_ORDER.indexOf(a.sid)-PRIORITY_ORDER.indexOf(b.sid);
+  });
+  const winner = results[0];
+  if(!winner || winner.score===0) return 'o_daily';
+  return winner.sid;
+}
+
+/** 重分类所有未人工改过的条目（可选，在导入后调用） */
+function reclassifyAll(onlyIfNoUserEdit=false){
+  for(const e of entries){
+    if(onlyIfNoUserEdit && e._userEdited) continue;
+    e.cat = guessCat(e.text || '');
+  }
+  save(); render();
+}
+
+/* ================= 导入：m.weibo.cn 抓取 ================= */
+const PROXIES=[
+  u=>'https://api.allorigins.win/raw?url='+encodeURIComponent(u),
+  u=>'https://corsproxy.io/?url='+encodeURIComponent(u),
+  u=>'https://api.codetabs.com/v1/proxy/?quest='+encodeURIComponent(u)
+];
+async function fetchJSON(url){
+  let lastErr=null;
+  for(const p of PROXIES){
+    try{
+      const timer=new Promise((_,rj)=>setTimeout(()=>rj(new Error('timeout')),30000));
+      const r=await Promise.race([fetch(p(url),{signal:abortCtl.signal}),timer]);
+      if(!r.ok) throw new Error('HTTP '+r.status);
+      const txt=await r.text();
+      return JSON.parse(txt);
+    }catch(e){
+      if(e.name==='AbortError') throw e;
+      lastErr=e;
+    }
+  }
+  throw lastErr||new Error('all proxies failed');
+}
+function parseUid(str){
+  const s=(str||'').trim();
+  let m=s.match(/weibo\.(?:com|cn)\/u\/(\d+)/)||s.match(/[?&]uid=(\d+)/)||s.match(/containerid=107603(\d+)/);
+  if(m) return m[1];
+  if(/^\d{5,}$/.test(s)) return s;
+  return null;
+}
+function mblogToEntry(mb,ownerUid){
+  const html=mb.text||'';
+  let text=htmlToText(html);
+  const pics=((mb.pics)||[]).map(p=>(p.large&&p.large.url)||p.url).filter(Boolean);
+  const isRt=!!mb.retweeted_status; // 转发：仅保留博主自己写的文字与配图，忽略被转发原文
+  if(isRt) text=text.replace(/^转发微博[:：]?$/,'').trim();
+  if(!text&&!pics.length) return null;
+  if(!text) text='（本条无文字，配图如下）';
+  const video=(mb.page_info&&mb.page_info.type==='video')?(mb.page_info.page_url||''):'';
+  return {
+    id:uid(), sid:String(mb.id||''),
+    title:genTitle(text), text,
+    images:pics,
+    cat:guessCat(text),
+    src:'https://weibo.com/'+ownerUid+'/'+(mb.bid||mb.id||''),
+    time:mb.created_at||'', video
+  };
+}
+async function importCards(cards,ownerUid){
+  const out=[];
+  for(const c of (cards||[])){
+    const mb=c.mblog||((c.data&&c.data.mblog));
+    if(!mb||mb.isAd) continue;
+    const e=mblogToEntry(mb,ownerUid);
+    if(e) out.push(e);
+  }
+  // 展开长文（尽力而为）
+  let done=0;
+  for(let i=0;i<out.length;i++){
+    const raw=(cards||[]).map(c=>c.mblog).filter(Boolean).find(m=>String(m.id)===out[i].sid);
+    if(!raw||!(raw.text||'').includes('>全文<')) continue;
+    done++;
+    setProg('展开长文 '+done+' …');
+    try{
+      const d=await fetchJSON('https://m.weibo.cn/statuses/extend?id='+out[i].sid);
+      const lt=d&&d.data&&((d.data.longText&&d.data.longText.longTextContent)||d.data.longTextContent);
+      if(lt) out[i].text=lt.trim();
+    }catch(e){}
+  }
+  for(const e of out){ e.title=genTitle(e.text); e.cat=guessCat(e.text); }
+  return out;
+}
+function mergeImport(list){
+  let added=0,skipped=0;
+  const sidSet=new Set(entries.map(e=>e.sid).filter(Boolean));
+  for(const e of list){
+    if(e.sid&&sidSet.has(e.sid)){skipped++;continue;}
+    if(e.sid) sidSet.add(e.sid);
+    entries.push(e); added++;
+  }
+  save(); render();
+  return {added,skipped};
+}
+async function doFetch(){
+  if(fetching) return;
+  const uidv=parseUid(document.getElementById('linkInput').value);
+  if(!uidv){alert('无法识别 UID。支持：weibo.com/u/数字ID、m.weibo.cn/u/数字ID、含 uid= 参数的链接、或直接输入纯数字ID。');return;}
+  fetching=true; abortCtl=new AbortController();
+  document.getElementById('fetchBtn').disabled=true;
+  document.getElementById('stopBtn').style.display='';
+  let since='',page=0,added=0,skipped=0,failed='';
+  try{
+    while(fetching&&page<6){
+      page++;
+      setProg('第 '+page+' 页抓取中…');
+      const api='https://m.weibo.cn/api/container/getIndex?type=uid&value='+uidv+'&containerid=107603'+uidv+(since?('&since_id='+since):'');
+      let j;
+      try{ j=await fetchJSON(api); }
+      catch(e){
+        if(e.name==='AbortError') throw e;
+        failed='网络代理均不可用'; break;
+      }
+      if(!j||!j.ok||!j.data){ failed=(!j||j.ok===0)?'接口返回异常（可能需要登录态或UID有误）':'接口返回为空'; break; }
+      const list=await importCards(j.data.cards||[],uidv);
+      const r=mergeImport(list); added+=r.added; skipped+=r.skipped;
+      setProg('已获取 '+added+' 条（第 '+page+' 页）');
+      since=j.data.since_id||'';
+      if(!since) break;
+    }
+  }catch(e){}
+  fetching=false; abortCtl=null;
+  document.getElementById('fetchBtn').disabled=false;
+  document.getElementById('stopBtn').style.display='none';
+  if(failed&&added===0){
+    setProg('');
+    alert('自动抓取失败（'+failed+'）。\n\n备用方案：\n1. 手机/电脑打开该用户微博主页；\n2. 全选复制页面文字（或复制 m.weibo.cn 接口返回的 JSON）；\n3. 点击右上角【粘贴导入】完成提取。');
+  }else{
+    setProg('完成：新增 '+added+' 条'+(skipped?('，跳过重复 '+skipped+' 条'):''));
+    setTimeout(()=>setProg(''),6000);
+  }
+}
+
+/* ================= 导入：粘贴解析 ================= */
+const DROP_LINE=[
+  /^(转发|赞|评论|收藏)\s*\[?\d*\]?\s*$/,
+  /^(转发|赞|评论|收藏)(\s*\d+|\[\d+\])+.*$/,
+  /^来自\s*\S+\s*$/,
+  /^(今天|昨天|\d{1,2}月\d{1,2}日|\d{4}-\d{1,2}-\d{1,2}|\d{1,2}-\d{1,2})\s*\d{1,2}:\d{2}/,
+  /^\d+\s*(分钟|小时|秒)前$/,
+  /^编辑于/,
+  /^(收起|展开|全文)$|^查[看元]/,
+  /^\/\*[\s\S]*\*\/$/
+];
+const COMMENT_LINE=[/^回复\s*@/,/^@[\w\u4e00-\u9fa5_-]{1,30}\s*[:：]/];
+function isDropLine(l){
+  const s=l.trim();
+  if(!s) return false;
+  if(COMMENT_LINE.some(r=>r.test(s))) return true;
+  if(DROP_LINE.some(r=>r.test(s))&&s.length<60) return true;
+  return false;
+}
+function isTimeBoundary(l){
+  const s=l.trim();
+  return s.length<40&&(/^(今天|昨天|\d{1,2}月\d{1,2}日|\d{4}-\d{1,2}-\d{1,2})\s*\d{1,2}:\d{2}/.test(s)||/来自\s*\S+$/.test(s)||/^\d+\s*(分钟|小时|秒)前$/.test(s));
+}
+function parsePastedText(raw){
+  let text=raw.replace(/\r\n?/g,'\n').trim();
+  // ① 直接是接口 JSON
+  if(text.startsWith('{')){
+    try{
+      const j=JSON.parse(text);
+      if(j&&j.data&&j.data.cards){
+        const u=(j.data.userInfo&&j.data.userInfo.id)||'';
+        return importCards(j.data.cards,u);
+      }
+    }catch(e){}
+  }
+  // ② 纯文本启发式解析
+  const lines=text.split('\n');
+  const blocks=[]; let cur=[];
+  for(const l of lines){
+    if(isTimeBoundary(l)){ if(cur.some(x=>!isDropLine(x))) blocks.push(cur); cur=[]; continue; }
+    cur.push(l);
+  }
+  if(cur.some(x=>!isDropLine(x))) blocks.push(cur);
+  const out=[];
+  for(const b of blocks){
+    const kept=b.filter(l=>!isDropLine(l));
+    let t=kept.join('\n').replace(/\n{3,}/g,'\n\n').replace(/^转发微博[:：]?\n?/,'').trim();
+    if(!t) continue;
+    t=t.replace(/^\/\/@[\s\S]{0,40}?:/,'').trim();
+    out.push({id:uid(),sid:null,title:genTitle(t),text:t,images:[],cat:guessCat(t),src:'',time:'',video:''});
+  }
+  return out;
+}
+
+/* ================= 分类管理 ================= */
+function render(){ renderCats(); renderEntries(); }
+function renderCats(){
+  const box=document.getElementById('catList');
+  let html='<div class="cat allrow'+(curCat==='all'?' sel':'')+'" data-i="-1">'
+    +'<span class="nm" data-act="sel">≡ 全部</span>'
+    +'<span class="ct">'+entries.length+'</span></div>';
+  html+=cats.map((c,i)=>{
+    const n=entries.filter(e=>e.cat===c.id).length;
+    return '<div class="cat'+(curCat===c.id?' sel':'')+'" draggable="true" data-i="'+i+'">'
+      +'<span class="grip" title="拖拽排序">⠿</span>'
+      +'<span class="nm" data-act="sel">'+esc(c.name)+'</span>'
+      +'<span class="ct">'+n+'</span>'
+      +'<button class="del" data-act="del" title="删除分类">×</button>'
+      +'</div>';
+  }).join('');
+  box.innerHTML=html;
+}
+function selectCat(i){
+  curCat = (i<0) ? 'all' : cats[i].id;
+  render();
+  // 手机端：选中后收起抽屉
+  if(window.innerWidth<=860) document.body.classList.remove('drawer-open');
+}
+document.getElementById('catList').addEventListener('click',ev=>{
+  const row=ev.target.closest('.cat'); if(!row) return;
+  const i=+row.dataset.i;
+  const act=ev.target.dataset.act;
+  if(i>=0&&act==='del'){
+    const c=cats[i];
+    if(cats.length<=1){alert('至少保留一个分类');return;}
+    if(!confirm('删除分类「'+c.name+'」？其中条目将移入「其他」（若无则移入第一个分类）。')) return;
+    const fb=(cats.find(x=>x.name==='其他'&&x.id!==c.id)||cats.find(x=>x.id!==c.id)).id;
+    entries.forEach(e=>{if(e.cat===c.id)e.cat=fb;});
+    if(curCat===c.id) curCat='all';
+    cats.splice(i,1); save(); render(); return;
+  }
+  selectCat(i);
+});
+document.getElementById('catList').addEventListener('dblclick',ev=>{
+  const row=ev.target.closest('.cat'); if(!row||+row.dataset.i<0) return;
+  const c=cats[+row.dataset.i];
+  const nm=prompt('重命名分类：',c.name);
+  if(nm&&nm.trim()){c.name=nm.trim(); save(); render();}
+});
+// 拖拽排序
+let dragIdx=-1;
+const catList=document.getElementById('catList');
+catList.addEventListener('dragstart',ev=>{
+  const row=ev.target.closest('.cat'); if(!row||+row.dataset.i<0) return;
+  dragIdx=+row.dataset.i; row.classList.add('dragging');
+  ev.dataTransfer.effectAllowed='move';
+});
+catList.addEventListener('dragend',()=>{
+  document.querySelectorAll('.cat').forEach(x=>x.classList.remove('dragging','over'));
+  dragIdx=-1;
+});
+catList.addEventListener('dragover',ev=>{
+  ev.preventDefault();
+  const row=ev.target.closest('.cat');
+  document.querySelectorAll('.cat').forEach(x=>x.classList.remove('over'));
+  if(row&&+row.dataset.i>=0) row.classList.add('over');
+});
+catList.addEventListener('drop',ev=>{
+  ev.preventDefault();
+  const row=ev.target.closest('.cat'); if(!row||dragIdx<0||+row.dataset.i<0) return;
+  const to=+row.dataset.i;
+  if(to===dragIdx) return;
+  const [m]=cats.splice(dragIdx,1); cats.splice(to,0,m);
+  save(); render();
+});
+function addCat(){
+  const inp=document.getElementById('newCat');
+  const nm=inp.value.trim();
+  if(!nm) return;
+  cats.push({id:uid(),name:nm}); inp.value=''; save(); render();
+}
+document.getElementById('addCat').addEventListener('click',addCat);
+document.getElementById('newCat').addEventListener('keydown',e=>{if(e.key==='Enter')addCat();});
+
+/* ================= 条目展示（只读）与排序 ================= */
+function visibleEntries(){
+  return curCat==='all'?entries:entries.filter(e=>e.cat===curCat);
+}
+function moveEntry(id,dir){
+  const i=entries.findIndex(e=>e.id===id); if(i<0) return;
+  const catId=entries[i].cat;
+  let j=i+dir;
+  while(j>=0&&j<entries.length&&entries[j].cat!==catId) j+=dir;
+  if(j<0||j>=entries.length) return;
+  [entries[i],entries[j]]=[entries[j],entries[i]];
+  save(); render();
+}
+function renderEntries(){
+  const area=document.getElementById('entryArea');
+  const list=visibleEntries();
+  document.getElementById('scopeTip').textContent='当前：'+(curCat==='all'?'全部':(cats.find(c=>c.id===curCat)||{}).name)+' · '+list.length+' 条';
+  if(!list.length){
+    area.innerHTML='<div class="empty"><b>暂无条目</b><br>点击左上角 ☰ 选择分类，或用顶部按钮导入数据。</div>';
+    return;
+  }
+  const groups=curCat==='all'
+    ? cats.map(c=>({c,items:entries.filter(e=>e.cat===c.id)})).filter(g=>g.items.length)
+    : [{c:cats.find(c=>c.id===curCat)||{name:'?'},items:list}];
+  area.innerHTML=groups.map(g=>
+    '<div class="group"><h2>'+esc(g.c.name)+' <span>('+g.items.length+')</span></h2>'
+    +g.items.map(e=>entryCard(e)).join('')+'</div>'
+  ).join('');
+}
+function entryCard(e){
+  const catName=(cats.find(c=>c.id===e.cat)||{}).name||'未分类';
+  const imgs=(e.images||[]).map(u=>
+    '<span class="im"><a href="'+esc(u)+'" target="_blank"><img src="'+esc(u)+'" loading="lazy" alt=""></a></span>').join('');
+  return '<div class="card" data-id="'+e.id+'">'
+    +'<div class="badge">'+esc(catName)+'</div>'
+    +'<div class="t">'+esc(e.title)+'</div>'
+    +'<div class="tx">'+esc(e.text)+'</div>'
+    +(imgs?('<div class="imgs">'+imgs+'</div>'):'')
+    +'<div class="foot">'
+      +'<span class="meta">'
+        +(e.time?('· '+esc(e.time)):'')
+        +(e.video?('· <a href="'+esc(e.video)+'" target="_blank">视频</a>'):'')
+        +(e.src?('· <a href="'+esc(e.src)+'" target="_blank">原文</a>'):'')
+      +'</span>'
+      +'<button class="icon" data-act="up" title="上移">↑</button>'
+      +'<button class="icon" data-act="down" title="下移">↓</button>'
+      +'<button class="icon" data-act="edit" title="编辑">✎ 编辑</button>'
+    +'</div>'
+  +'</div>';
+}
+document.getElementById('entryArea').addEventListener('click',ev=>{
+  const btn=ev.target.closest('button[data-act]'); if(!btn) return;
+  const card=btn.closest('.card');
+  const e=entries.find(x=>x.id===card.dataset.id); if(!e) return;
+  switch(btn.dataset.act){
+    case 'up': moveEntry(e.id,-1); break;
+    case 'down': moveEntry(e.id,1); break;
+    case 'edit': openEditor(e.id); break;
+  }
+});
+
+/* ================= 编辑弹层 ================= */
+let edId=null;
+function openEditor(id){
+  const e=entries.find(x=>x.id===id); if(!e) return;
+  edId=id;
+  document.getElementById('edTitle').value=e.title||'';
+  document.getElementById('edCat').innerHTML=cats.map(c=>'<option value="'+c.id+'"'+(c.id===e.cat?' selected':'')+'>'+esc(c.name)+'</option>').join('');
+  document.getElementById('edText').value=e.text||'';
+  renderEdImgs(e);
+  document.getElementById('mask').classList.add('open');
+  document.body.style.overflow='hidden';
+}
+function renderEdImgs(e){
+  document.getElementById('edImgs').innerHTML=(e.images||[]).map((u,i)=>
+    '<span class="im"><a href="'+esc(u)+'" target="_blank"><img src="'+esc(u)+'" loading="lazy" alt=""></a>'
+    +'<button class="rm" data-i="'+i+'" title="移除配图" style="position:absolute;top:1px;right:1px;width:20px;height:20px;line-height:18px;text-align:center;background:rgba(0,0,0,.55);color:#fff;border:none;border-radius:0 0 0 6px;font-size:13px;padding:0;">×</button></span>').join('')
+    +'<button class="add" id="edAddImg" title="添加配图链接">＋</button>';
+}
+function closeEditor(){
+  edId=null;
+  document.getElementById('mask').classList.remove('open');
+  document.body.style.overflow='';
+}
+document.getElementById('edClose').addEventListener('click',closeEditor);
+document.getElementById('edCancel').addEventListener('click',closeEditor);
+document.getElementById('mask').addEventListener('click',ev=>{ if(ev.target.id==='mask') closeEditor(); });
+document.getElementById('edSave').addEventListener('click',()=>{
+  const e=entries.find(x=>x.id===edId); if(!e){closeEditor();return;}
+  e.title=document.getElementById('edTitle').value.trim()||'未命名';
+  e.text=document.getElementById('edText').value;
+  e.cat=document.getElementById('edCat').value;
+  e._userEdited=true;
+  save(); render(); closeEditor();
+});
+document.getElementById('edDel').addEventListener('click',()=>{
+  const e=entries.find(x=>x.id===edId); if(!e){closeEditor();return;}
+  if(confirm('删除条目「'+e.title+'」？')){
+    entries=entries.filter(x=>x.id!==e.id);
+    save(); render(); closeEditor();
+  }
+});
+document.getElementById('edUp').addEventListener('click',()=>{ if(edId) moveEntry(edId,-1); });
+document.getElementById('edDown').addEventListener('click',()=>{ if(edId) moveEntry(edId,1); });
+document.getElementById('edImgs').addEventListener('click',ev=>{
+  const e=entries.find(x=>x.id===edId); if(!e) return;
+  if(ev.target.id==='edAddImg'){
+    const u=prompt('配图链接 URL：');
+    if(u&&u.trim()){ (e.images=e.images||[]).push(u.trim()); save(); renderEdImgs(e); render(); }
+  }else if(ev.target.classList.contains('rm')){
+    e.images.splice(+ev.target.dataset.i,1); save(); renderEdImgs(e); render();
+  }
+});
+
+/* ================= 侧栏收起 / 手机抽屉 ================= */
+function toggleDrawer(open){
+  document.body.classList.toggle('drawer-open',open);
+  document.getElementById('backdrop').classList.toggle('show',open);
+}
+document.getElementById('menuBtn').addEventListener('click',()=>toggleDrawer(true));
+document.getElementById('asideClose').addEventListener('click',()=>toggleDrawer(false));
+document.getElementById('backdrop').addEventListener('click',()=>toggleDrawer(false));
+document.getElementById('sideTab').addEventListener('click',()=>{
+  document.body.classList.remove('side-off');
+  try{localStorage.setItem(KEY+'_side','on');}catch(e){}
+});
+document.getElementById('sidebar').addEventListener('dblclick',ev=>{
+  // 桌面双击侧栏空白处收起（标题区域）
+  if(ev.target.closest('.asideHead')===null) return;
+  document.body.classList.add('side-off');
+  try{localStorage.setItem(KEY+'_side','off');}catch(e){}
+});
+
+/* ================= 导出 ================= */
+function exportEntries(){
+  const list=visibleEntries();
+  return curCat==='all'
+    ? cats.map(c=>({c,items:entries.filter(e=>e.cat===c.id)})).filter(g=>g.items.length)
+    : [{c:cats.find(c=>c.id===curCat)||{name:'全部'},items:list}];
+}
+function sourceLines(e){
+  if(!incSrc) return [];
+  const l=[];
+  if(e.src) l.push('原文：'+e.src);
+  if(e.time) l.push('时间：'+e.time);
+  if(e.images&&e.images.length) l.push('配图：'+e.images.join('  '));
+  if(e.video) l.push('视频：'+e.video);
+  return l;
+}
+/* --- Word (.docx)：内置 store-only ZIP --- */
+const CRC_T=(()=>{const t=new Int32Array(256);for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=(c&1)?(0xEDB88320^(c>>>1)):(c>>>1);t[n]=c;}return t;})();
+function crc32(u8){let c=-1;for(let i=0;i<u8.length;i++)c=CRC_T[(c^u8[i])&0xff]^(c>>>8);return (c^-1)>>>0;}
+function zipStore(files){
+  const enc=new TextEncoder();
+  const chunks=[]; const central=[]; let offset=0;
+  const w16=(dv,o,v)=>{dv.setUint16(o,v,true);};
+  const w32=(dv,o,v)=>{dv.setUint32(o,v>>>0,true);};
+  for(const f of files){
+    const data=(typeof f.data==='string')?enc.encode(f.data):f.data;
+    const name=enc.encode(f.name);
+    const crc=crc32(data);
+    const lh=new DataView(new ArrayBuffer(30));
+    w32(lh,0,0x04034b50); w16(lh,4,20); w16(lh,6,0x0800); w16(lh,8,0);
+    w16(lh,10,0); w16(lh,12,0); w32(lh,14,crc);
+    w32(lh,18,data.length); w32(lh,22,data.length);
+    w16(lh,26,name.length); w16(lh,28,0);
+    chunks.push(new Uint8Array(lh.buffer),name,data);
+    central.push({name,crc,size:data.length,offset});
+    offset+=30+name.length+data.length;
+  }
+  const cdStart=offset; let cdSize=0;
+  for(const c of central){
+    const ch=new DataView(new ArrayBuffer(46));
+    w32(ch,0,0x02014b50); w16(ch,4,20); w16(ch,6,20); w16(ch,8,0x0800); w16(ch,10,0);
+    w16(ch,12,0); w16(ch,14,0); w32(ch,16,c.crc);
+    w32(ch,20,c.size); w32(ch,24,c.size); w16(ch,28,c.name.length);
+    w16(ch,30,0); w16(ch,32,0); w16(ch,34,0); w16(ch,36,0); w32(ch,38,0);
+    w32(ch,42,c.offset);
+    chunks.push(new Uint8Array(ch.buffer),c.name);
+    cdSize+=46+c.name.length;
+  }
+  const eo=new DataView(new ArrayBuffer(22));
+  w32(eo,0,0x06054b50); w16(eo,4,0); w16(eo,6,0);
+  w16(eo,8,central.length); w16(eo,10,central.length);
+  w32(eo,12,cdSize); w32(eo,16,cdStart); w16(eo,20,0);
+  chunks.push(new Uint8Array(eo.buffer));
+  return new Blob(chunks,{type:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'});
+}
+function xesc(s){return String(s==null?'':s).replace(/[&<>]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[m]));}
+function wp(text,bold,sz,color){
+  const rpr='<w:rPr>'+(bold?'<w:b/>':'')+'<w:sz w:val="'+sz+'"/><w:szCs w:val="'+sz+'"/>'
+    +(color?('<w:color w:val="'+color+'"/>'):'')+'</w:rPr>';
+  return '<w:p><w:r>'+rpr+'<w:t xml:space="preserve">'+xesc(text)+'</w:t></w:r></w:p>';
+}
+function exportDocx(){
+  const groups=exportEntries();
+  if(!groups.length){alert('暂无可导出的条目');return;}
+  let body=wp('微博观点库',true,32);
+  body+=wp('范围：'+(curCat==='all'?'全部分类':(cats.find(c=>c.id===curCat)||{}).name)+'　生成：'+new Date().toLocaleString('zh-CN'),false,18,'888888');
+  for(const g of groups){
+    body+=wp('【'+g.c.name+'】',true,26,'FF8200');
+    for(const e of g.items){
+      body+=wp('◆ '+e.title,true,24);
+      for(const ln of (e.text||'').split('\n')) body+=wp(ln===''?' ':ln,false,21);
+      for(const sl of sourceLines(e)) body+=wp(sl,false,16,'888888');
+      body+=wp('',false,21);
+    }
+  }
+  const doc='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+    +'<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>'
+    +body+'<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1440" w:bottom="1440" w:left="1440" w:right="1440"/></w:sectPr>'
+    +'</w:body></w:document>';
+  const files=[
+    {name:'[Content_Types].xml',data:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>'},
+    {name:'_rels/.rels',data:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>'},
+    {name:'word/document.xml',data:doc}
+  ];
+  const blob=zipStore(files);
+  dl(blob,'微博观点库_'+dateStr()+'.docx');
+}
+/* --- PDF：打印视图 --- */
+function exportPdf(){
+  const groups=exportEntries();
+  if(!groups.length){alert('暂无可导出的条目');return;}
+  let html='<h1>微博观点库</h1><div class="meta">范围：'+esc(curCat==='all'?'全部分类':(cats.find(c=>c.id===curCat)||{}).name)+'　生成：'+new Date().toLocaleString('zh-CN')+'</div>';
+  for(const g of groups){
+    html+='<h2>'+esc(g.c.name)+'</h2>';
+    for(const e of g.items){
+      html+='<div class="it"><div class="tt">'+esc(e.title)+'</div><div class="tx">'+esc(e.text)+'</div>';
+      for(const sl of sourceLines(e)) html+='<div class="src">'+esc(sl)+'</div>';
+      html+='</div>';
+    }
+  }
+  const pa=document.getElementById('printArea');
+  pa.innerHTML=html;
+  window.print();
+}
+/* --- 备忘录纯文本 --- */
+function buildTxt(){
+  const groups=exportEntries();
+  if(!groups.length) return '';
+  let out='微博观点库\n';
+  for(const g of groups){
+    out+='\n—— '+g.c.name+' ——\n';
+    for(const e of g.items){
+      out+='\n【'+e.title+'】\n'+(e.text||'')+'\n';
+      for(const sl of sourceLines(e)) out+=sl+'\n';
+    }
+  }
+  return out;
+}
+function exportTxt(){
+  const t=buildTxt();
+  if(!t){alert('暂无可导出的条目');return;}
+  dl(new Blob(["\ufeff"+t],{type:'text/plain;charset=utf-8'}),'微博观点库_'+dateStr()+'.txt');
+}
+async function copyTxt(){
+  const t=buildTxt();
+  if(!t){alert('暂无可导出的条目');return;}
+  try{ await navigator.clipboard.writeText(t); alert('已复制，可直接粘贴到苹果备忘录'); }
+  catch(e){
+    const ta=document.createElement('textarea'); ta.value=t; document.body.appendChild(ta);
+    ta.select(); document.execCommand('copy'); ta.remove(); alert('已复制，可直接粘贴到苹果备忘录');
+  }
+}
+function dateStr(){
+  const d=new Date(),p=n=>String(n).padStart(2,'0');
+  return ''+d.getFullYear()+p(d.getMonth()+1)+p(d.getDate());
+}
+function dl(blob,name){
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob); a.download=name;
+  document.body.appendChild(a); a.click();
+  setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},800);
+}
+
+/* ================= JSON 导入 / 导出 ================= */
+function exportJson(){
+  if(!entries.length){alert('暂无可导出的条目');return;}
+  const meta = {
+    generated_at: new Date().toLocaleString('zh-CN'),
+    total_entries: entries.length
+  };
+  const data = {meta, cats, entries, inc:incSrc};
+  const blob = new Blob([JSON.stringify(data,null,2)], {type:'application/json;charset=utf-8'});
+  dl(blob, '微博观点库_'+dateStr()+'.json');
+}
+document.getElementById('expJson').addEventListener('click', exportJson);
+document.getElementById('impJson').addEventListener('click', ()=>{
+  document.getElementById('jsonFile').click();
+});
+document.getElementById('jsonFile').addEventListener('change', async ev=>{
+  const f = ev.target.files && ev.target.files[0];
+  ev.target.value='';
+  if(!f) return;
+  setProg('读取 '+f.name+' …');
+  try{
+    const txt = await f.text();
+    let d; try{ d = JSON.parse(txt); }catch(e){throw new Error('JSON 解析失败：'+e.message);}
+    // 兼容两种格式：(A) 我们的 Python 导出格式 {meta, cats, entries, inc}
+    //             (B) 前端 localStorage 精简格式 {cats, entries, inc}
+    if(!d || !Array.isArray(d.cats) || !Array.isArray(d.entries))
+      throw new Error('格式不符：缺少 cats 或 entries 数组');
+    // 如果用户已有数据，提示是否合并
+    let mode='overwrite';
+    if(entries.length){
+      const r = confirm('当前已有 '+entries.length+' 条数据。\n\n选择【确定】：覆盖（清空后载入新文件）\n选择【取消】：合并（按 sid 去重追加）');
+      mode = r ? 'overwrite' : 'merge';
+    }
+    if(mode==='overwrite'){
+      cats = d.cats.slice(); entries = d.entries.slice(); incSrc = !!d.inc;
+      document.getElementById('incSrc').checked = incSrc;
+    }else{
+      // merge: 若 sid 已存在则 skip，否则 push；若 file 里的分类不存在则追加
+      const sidSet = new Set(entries.map(e=>e.sid).filter(Boolean));
+      const idMap  = new Map(cats.map(c=>[c.id,c]));
+      for(const c of d.cats){ if(!idMap.has(c.id)) cats.push(c); idMap.set(c.id,c); }
+      let added=0, skipped=0;
+      for(const e of d.entries){
+        if(e.sid && sidSet.has(e.sid)){skipped++;continue;}
+        if(e.sid) sidSet.add(e.sid);
+        entries.push(e); added++;
+      }
+      setProg('完成：新增 '+added+' 条，跳过重复 '+skipped+' 条');
+      setTimeout(()=>setProg(''),5000);
+    }
+    curCat='all'; save(); render();
+    if(mode==='overwrite'){
+      setProg('载入完成：'+entries.length+' 条，分类数 '+cats.length);
+      setTimeout(()=>setProg(''),4000);
+    }
+  }catch(e){
+    setProg('导入失败');
+    alert('导入失败：'+e.message);
+  }
+});
+
+/* ================= 绑定与初始化 ================= */
+document.getElementById('fetchBtn').addEventListener('click',doFetch);
+document.getElementById('linkInput').addEventListener('keydown',e=>{if(e.key==='Enter')doFetch();});
+document.getElementById('stopBtn').addEventListener('click',()=>{fetching=false; if(abortCtl)abortCtl.abort();});
+document.getElementById('pasteToggle').addEventListener('click',()=>{
+  document.getElementById('pasteBox').classList.toggle('open');
+});
+document.getElementById('parseBtn').addEventListener('click',async()=>{
+  const raw=document.getElementById('pasteArea').value;
+  if(!raw.trim()){alert('请先粘贴内容');return;}
+  setProg('解析中…');
+  try{
+    const list=await parsePastedText(raw);
+    if(!list.length){
+      setProg('');
+      alert('未能识别出内容。建议：\n① 复制主页上博主的文字段落（不要带评论区）；\n② 或复制 m.weibo.cn 接口 JSON（抓取失败时按提示打开）。');
+      return;
+    }
+    const r=mergeImport(list);
+    document.getElementById('pasteArea').value='';
+    setProg('完成：新增 '+r.added+' 条'+(r.skipped?('，跳过重复 '+r.skipped+' 条'):''));
+    setTimeout(()=>setProg(''),5000);
+  }catch(e){setProg('解析失败');}
+});
+document.getElementById('incSrc').addEventListener('change',e=>{incSrc=e.target.checked; save();});
+document.getElementById('expDocx').addEventListener('click',exportDocx);
+document.getElementById('expPdf').addEventListener('click',exportPdf);
+document.getElementById('expTxt').addEventListener('click',exportTxt);
+document.getElementById('copyTxt').addEventListener('click',copyTxt);
+
+// 桌面侧栏收起状态记忆
+try{ if(localStorage.getItem(KEY+'_side')==='off') document.body.classList.add('side-off'); }catch(e){}
+
+if(!load()){const d=defaultState(); cats=d.cats; save();}
+render();
+
+/* 手机/局域网模式：若本地无数据且通过 http 访问，自动加载同目录 data_圆味糕蛋.json */
+(function(){
+  if(load()) return;
+  if(!/^https?:$/.test(location.protocol)) return;
+  fetch('data.json').then(r=>{if(!r.ok)throw 0;return r.json();}).then(d=>{
+    if(!d||!Array.isArray(d.cats))return;
+    cats=d.cats; entries=d.entries||[];
+    const es=d.meta&&d.meta.export_settings||{};
+    incSrc=!!es.include_source;
+    document.getElementById('incSrc').checked=incSrc;
+    save(); render();
+    setProg('✓ 已自动载入服务器数据：'+(d.meta&&d.meta.total_entries||entries.length)+' 条');
+  }).catch(()=>{});
+})();
+
+</script>
+<script>
+if('serviceWorker' in navigator){
+  window.addEventListener('load',function(){
+    navigator.serviceWorker.register('sw.js').catch(function(){});
+  });
+}
+</script>
+</body>
+</html>
