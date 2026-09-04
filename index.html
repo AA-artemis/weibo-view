@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
@@ -155,6 +155,7 @@
   <div class="hrow">
     <button class="menuBtn" id="menuBtn" title="分类">☰</button>
     <div class="logo">微博<em>观点库</em></div>
+    <select id="userSelect" style="max-width:160px;font-size:14px;"></select>
     <input id="linkInput" placeholder="粘贴微博主页链接（如 https://weibo.com/u/1234567890 或纯数字UID）">
     <button class="primary" id="fetchBtn">抓取</button>
     <button id="stopBtn">停止</button>
@@ -1013,23 +1014,40 @@ document.getElementById('copyTxt').addEventListener('click',copyTxt);
 // 桌面侧栏收起状态记忆
 try{ if(localStorage.getItem(KEY+'_side')==='off') document.body.classList.add('side-off'); }catch(e){}
 
-if(!load()){const d=defaultState(); cats=d.cats; save();}
-render();
-
-/* 手机/局域网模式：若本地无数据且通过 http 访问，自动加载同目录 data_圆味糕蛋.json */
-(function(){
-  if(load()) return;
-  if(!/^https?:$/.test(location.protocol)) return;
-  fetch('data.json').then(r=>{if(!r.ok)throw 0;return r.json();}).then(d=>{
-    if(!d||!Array.isArray(d.cats))return;
+/* 手机/局域网模式：多用户切换 */
+let userList=[];
+async function loadUserList(){
+  try{
+    const r=await fetch('users.json');
+    if(!r.ok) return;
+    userList=await r.json();
+    const sel=document.getElementById('userSelect');
+    sel.innerHTML='<option value="">— 选择用户 —</option>'+userList.map(u=>'<option value="'+u.file+'">'+u.id+' ('+u.count+'条)</option>').join('');
+    sel.style.display='';
+  }catch(e){}
+}
+async function loadUser(file){
+  if(!file) return;
+  setProg('加载中…');
+  try{
+    const r=await fetch(file);
+    if(!r.ok) throw 0;
+    const d=await r.json();
+    if(!d||!Array.isArray(d.cats)) return;
     cats=d.cats; entries=d.entries||[];
     const es=d.meta&&d.meta.export_settings||{};
     incSrc=!!es.include_source;
     document.getElementById('incSrc').checked=incSrc;
-    save(); render();
-    setProg('✓ 已自动载入服务器数据：'+(d.meta&&d.meta.total_entries||entries.length)+' 条');
-  }).catch(()=>{});
-})();
+    curCat='all'; save(); render();
+    setProg('✓ 已载入 '+d.meta&&d.meta.total_entries||entries.length+' 条');
+    setTimeout(()=>setProg(''),3000);
+  }catch(e){ setProg('加载失败'); }
+}
+document.getElementById('userSelect').addEventListener('change',e=>{ loadUser(e.target.value); });
+
+if(!load()){const d=defaultState(); cats=d.cats; save();}
+render();
+if(/^https?:$/.test(location.protocol)){ loadUserList(); }
 
 </script>
 <script>
